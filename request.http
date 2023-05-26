@@ -1,0 +1,15 @@
+###
+POST http://localhost:8089/api/v1/chat
+Content-Type: application/json
+
+[{"role":"system","content":"你现在是百度的语言模型文心一言"},
+
+  {"role":"user","content":"你是谁"}
+]
+
+
+###
+POST http://localhost:8089/api/v1/chat
+Content-Type: application/json
+
+[{"role":"user","content":"Python 二叉搜索树"}]
