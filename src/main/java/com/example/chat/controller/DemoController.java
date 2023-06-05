@@ -6,14 +6,10 @@ import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
 import com.unfbx.chatgpt.entity.chat.Message;
 import com.unfbx.chatgpt.function.KeyRandomStrategy;
-import com.unfbx.chatgpt.interceptor.OpenAiAuthInterceptor;
-import com.unfbx.chatgpt.sse.ConsoleEventSourceListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.sse.EventSourceListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +31,8 @@ public class DemoController {
 
     @Autowired
     private Environment env;
-
+    private float temperature = 0.5f;
+    private String prompt = "";
     private static DynamicKeyOpenAiAuthInterceptor interceptor = new DynamicKeyOpenAiAuthInterceptor();
 
 
@@ -57,11 +54,36 @@ public class DemoController {
         // 设置响应状态码为 200，表示请求已成功处理
         // 遍历 listMap，将用户输入的内容转换为 Message 对象，最后存入 messages
         List<Message> messages = new ArrayList<>();
+        if (listMap.get(0).get("role") == null) {
+//            弹出listMap的第一个元素
+            Map<String, String> settings = listMap.remove(0);
+//            从settings中获取temperature 如果没有就设置为0.5
+            temperature = settings.get("temperature") == null ? 0.5f : Float.parseFloat(settings.get("temperature"));
+            prompt = settings.get("prompt") == null ? "" : settings.get("prompt");
+
+        }
+
         listMap.forEach(map -> messages.add(
                 Message.builder()
-                        .role("user".equals(map.get("role")) ? Message.Role.USER : Message.Role.ASSISTANT)
+                        .role(getCharacter(map.get("role")))
                         .content(map.get("content"))
                         .build()));
+
+
+        if(!prompt.equals("")){//如果prompt不为空，就在messages的倒数第二个位置插入一个Message对象
+            messages.add(messages.size() - 1,
+                    Message.builder()
+                            .role(getCharacter("system"))
+                            .content(prompt)
+                            .build());
+        }
+
+        //如果prompt不为空，就在messages的倒数第一个位置的content后面加上prompt
+//        if (!prompt.equals("")) {
+//            messages.get(messages.size() - 1).setContent(prompt + messages.get(messages.size() - 1).getContent());
+//        }
+
+        //如果prompt不为空，就在messages的倒数第一个
         // 调用 chat 方法，传入 messages 和一个 ChatEventSourceListener 对象作为参数
         chat(messages, response.getWriter());
 
@@ -90,7 +112,7 @@ public class DemoController {
                 .model(ChatCompletion.Model.GPT_3_5_TURBO.getName())
                 .maxTokens(2048)
                 .messages(messages)
-                .temperature(0.9)
+                .temperature(temperature)
                 .build();
         // 创建一个 ChatCompletion 对象，表示聊天的完成情况。其中 model 表示聊天需要使用的机器学习模型，maxTokens 表示每次聊天生成的最大 token 数量，messages 表示用户输入的信息
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -105,5 +127,13 @@ public class DemoController {
             System.out.println("聊天过程中出现异常");
             e.printStackTrace();
         }
+    }
+
+    // 根据用户输入的角色，返回 Message.Role 对象
+    private Message.Role getCharacter(String character) {
+        if (character.equals("system")) return Message.Role.SYSTEM;
+        if (character.equals("user")) return Message.Role.USER;
+//        if(character.equals("ai") || character.equals("assistant"))
+        return Message.Role.ASSISTANT;
     }
 }
