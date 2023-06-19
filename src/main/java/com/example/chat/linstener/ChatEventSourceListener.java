@@ -32,6 +32,8 @@ public class ChatEventSourceListener extends EventSourceListener {
 //        this.writer = writer;
 //    }
 
+
+    //
     public ChatEventSourceListener(PrintWriter writer, CountDownLatch countDownLatch) {
         this.writer = writer;
         this.countDownLatch = countDownLatch;

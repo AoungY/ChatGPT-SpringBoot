@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+
 
 
 @Slf4j
@@ -78,6 +80,8 @@ public class DemoController {
                             .build());
         }
 
+
+
         //如果prompt不为空，就在messages的倒数第一个位置的content后面加上prompt
 //        if (!prompt.equals("")) {
 //            messages.get(messages.size() - 1).setContent(prompt + messages.get(messages.size() - 1).getContent());
@@ -109,8 +113,10 @@ public class DemoController {
 //      Message message = Message.builder().role(Message.Role.USER).content("Hello").build();
         ChatCompletion chatCompletion = ChatCompletion
                 .builder()
-                .model(ChatCompletion.Model.GPT_3_5_TURBO.getName())
-                .maxTokens(2048)
+//                .model(ChatCompletion.Model.GPT_3_5_TURBO.getName())
+//                .maxTokens(2048)
+                .model("gpt-3.5-turbo-16k")//最大tokens16384
+                .maxTokens(8192)
                 .messages(messages)
                 .temperature(temperature)
                 .build();
@@ -119,7 +125,6 @@ public class DemoController {
         client.streamChatCompletion(chatCompletion, new ChatEventSourceListener(writer, countDownLatch));
         // 通过 OpenAI 的客户端对象 client 调用 streamChatCompletion 方法，实现智能聊天的功能。其中 chatCompletion 表示聊天的完成情况，listener 表示事件源监听器，用于监控聊天过程
         // 创建一个 CountDownLatch 对象，表示一个线程等待其他线程完成后继续执行
-
         try {
             countDownLatch.await();
             System.out.println("聊天结束");
@@ -127,6 +132,8 @@ public class DemoController {
             System.out.println("聊天过程中出现异常");
             e.printStackTrace();
         }
+
+
     }
 
     // 根据用户输入的角色，返回 Message.Role 对象
@@ -136,4 +143,7 @@ public class DemoController {
 //        if(character.equals("ai") || character.equals("assistant"))
         return Message.Role.ASSISTANT;
     }
+
+
+
 }
